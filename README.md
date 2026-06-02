@@ -174,43 +174,123 @@ STING_DSS/
 ├── backend/
 │   ├── app/
 │   │   ├── api/
+│   │   │   ├── router.py
 │   │   │   └── endpoints/
-│   │   │       ├── bilstm_endpoint.py       # Tab 1 — Bi-LSTM inference
-│   │   │       ├── ode_endpoint.py          # Tab 3 — ODE simulation
-│   │   │       ├── ga_endpoint.py           # Tab 4 — GA optimisation
-│   │   │       ├── gnn_v2_endpoint.py       # Tab 5 — GNN prediction
-│   │   │       ├── gnn_xai.py               # Tab 5 — SHAP / GEMEX / CF
-│   │   │       ├── gan_v2_endpoint.py       # Tab 6 — patient generation
-│   │   │       └── gan_v2_train_endpoint.py # Tab 6 — GAN training
+│   │   │       ├── auth.py                      # JWT authentication
+│   │   │       ├── admin.py                     # User management, activity logs, surveys
+│   │   │       ├── repurposing.py               # Tab 1 — Bi-LSTM inference & docking
+│   │   │       ├── training.py                  # Tab 1 — Model training
+│   │   │       ├── ode.py                       # Tab 3 — ODE simulation
+│   │   │       ├── ode_sensitivity.py           # Tab 3 — Sensitivity analysis
+│   │   │       ├── pipeline.py                  # Tab 3 — Pipeline orchestration
+│   │   │       ├── ga_optimization.py           # Tab 4 — GA dose optimisation
+│   │   │       ├── gnn_v2_endpoint.py           # Tab 5 — GNN v2 prediction
+│   │   │       ├── gnn_xai.py                   # Tab 5 — SHAP / GEMEX / Counterfactual / Permutation
+│   │   │       ├── gan_v2_endpoint.py           # Tab 6 — Synthetic patient generation & COP+NOV scenario
+│   │   │       └── gan_v2_train_endpoint.py     # Tab 6 — GAN training pipeline
+│   │   ├── core/
+│   │   │   ├── config.py                        # App settings & environment variables
+│   │   │   ├── database.py                      # SQLite user/session store
+│   │   │   └── security.py                      # JWT auth, bcrypt, rate limiting
 │   │   ├── modules/
+│   │   │   ├── repurposing/
+│   │   │   │   ├── bilstm_model.py              # Bi-LSTM architecture (2-layer + L2)
+│   │   │   │   ├── bilstm_trainer.py            # Training loop & HPO
+│   │   │   │   ├── data_loader.py               # DrugBank / ChEMBL / PubChem / KIBA loader
+│   │   │   │   └── xai_explainer.py             # Integrated Gradients + LIME
 │   │   │   ├── ode/
-│   │   │   │   └── ten_drug_all_model.py    # 48-dim ODE system
-│   │   │   ├── ga/
-│   │   │   │   └── ga_optimizer.py          # Multi-objective GA
+│   │   │   │   ├── all_drugs.py                 # Drug parameter definitions (10 drugs)
+│   │   │   │   ├── equations_daily.py           # Daily ODE equations
+│   │   │   │   ├── full_drug_engine.py          # TenDrugALLModel — 48-dim state vector, RK45
+│   │   │   │   ├── full_drug_adapter.py         # Protocol → ODE parameter adapter
+│   │   │   │   ├── full_drug_ga.py              # GA fitness function (ODE-coupled)
+│   │   │   │   ├── genetic_algorithms.py        # GA core (pop=80, gen=200)
+│   │   │   │   ├── ode_simulator.py             # ODE runner & sensitivity analysis
+│   │   │   │   ├── peg_simulator.py             # PEG-Asparaginase depletion model
+│   │   │   │   ├── runner_triple.py             # Multi-phase ODE orchestration
+│   │   │   │   └── plot_functions.py            # Trajectory chart data builders
+│   │   │   ├── gnn/
+│   │   │   │   ├── gnn_v2_model.py              # GCNConv×2 (h=256, dropout=0.2), 8 targets
+│   │   │   │   ├── gnn_dataset_v2.py            # Heterogeneous patient graph, k=3 lag
+│   │   │   │   └── training_pool.py             # GA pool → GNN training dataset
 │   │   │   └── gan_v2/
-│   │   │       └── posthoc_ode.py           # Post-hoc ODE for GAN cohort
-│   │   └── data/
-│   │       ├── models/                      # .h5 / .pth / .pkl model files
-│   │       ├── ga_results/                  # GA optimisation pool (82+ records)
-│   │       └── gan_training_pool/           # GAN training pool (184+ records)
-│   └── requirements.txt
+│   │   │       ├── ctgan_base.py                # CTGAN clean-schema wrapper
+│   │   │       ├── drug10_config.py             # 10-drug GAN feature schema
+│   │   │       ├── clinical_enrichment.py       # Post-hoc MRD / PI / prognosis pipeline
+│   │   │       ├── risk_stratification.py       # 5-class unified risk ontology (LR→VHR)
+│   │   │       ├── risk_covariate_augmentation.py  # GA pool → GAN training pool
+│   │   │       ├── posthoc_ode.py               # COP+NOV ODE repositioning scenario
+│   │   │       ├── consistency_rules.py         # Clinical constraint enforcement
+│   │   │       ├── reference_lookup.py          # Post-hoc reference CSV lookups
+│   │   │       └── gan_pool.py                  # GAN training pool management
+│   │   ├── schemas/
+│   │   │   └── user.py                          # Pydantic user schemas
+│   │   ├── main.py                              # FastAPI app entry point
+│   │   └── worker.py                            # Celery async task worker
+│   ├── data/
+│   │   ├── models/
+│   │   │   ├── alldrugs_gnn_scaler.json         # ✅ included — GNN normalisation params
+│   │   │   ├── trained_alldrugs_gnn_model.pth   # ⛔ not included — request access
+│   │   │   ├── bilstm_l2_bilstm_l2_hpoo.h5     # ⛔ not included — request access
+│   │   │   ├── ctgan_drug10.pkl                 # ⛔ not included — request access
+│   │   │   └── synthetic_drug10.csv             # ⛔ not included — request access
+│   │   ├── ga_results/                          # ⛔ runtime data — not included
+│   │   ├── gnn_training_pool/                   # ⛔ runtime data — not included
+│   │   ├── gan_training_pool/                   # ⛔ runtime data — not included
+│   │   ├── gan_v2_results/                      # ⛔ runtime data — not included
+│   │   └── ode_results/                         # ⛔ runtime data — not included
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Tab1_DrugReposition/
-│   │   │   ├── Tab2_PatientSetup/
-│   │   │   ├── Tab3_ODESimulation/
-│   │   │   ├── Tab4_GAOptimisation/
-│   │   │   ├── Tab5_GNN/
-│   │   │   └── Tab6_GAN/
-│   │   └── translations.js                  # TR / EN strings
-│   └── nginx.conf
+│   │   │   ├── tabs/
+│   │   │   │   ├── Tab1Repurposing.jsx
+│   │   │   │   ├── Tab2Parameters.jsx
+│   │   │   │   ├── Tab3ODE.jsx
+│   │   │   │   ├── Tab4GA.jsx
+│   │   │   │   ├── Tab5GNN.jsx
+│   │   │   │   ├── Tab6GAN.jsx
+│   │   │   │   └── TabAdmin.jsx
+│   │   │   └── ui/
+│   │   │       ├── AboutModal.jsx
+│   │   │       ├── DockingPanel.jsx
+│   │   │       ├── HowToUse.jsx
+│   │   │       ├── ModelStatusPanel.jsx
+│   │   │       ├── SurveyModal.jsx
+│   │   │       ├── TrainingPanel.jsx
+│   │   │       └── WizardGuide.jsx
+│   │   ├── i18n/
+│   │   │   ├── translations.js                  # TR / EN bilingual strings
+│   │   │   └── LangContext.jsx
+│   │   ├── services/
+│   │   │   └── api.js                           # Axios API client
+│   │   ├── hooks/
+│   │   │   └── useProject.js                    # Session management hook
+│   │   ├── constants/
+│   │   │   └── drugConfig.js                    # Drug parameter constants
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── public/
+│   │   └── logo.jpg
+│   ├── nginx.conf
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── tailwind.config.js
 ├── docker/
-│   ├── docker-compose.yml
-│   └── docker-compose.prod.yml
-└── scripts/
-    ├── risk_covariate_augmentation.py
-    └── clinical_enrichment.py
+│   └── docker-compose.yml                       # Development
+├── scripts/
+│   └── save_tokenizers.py                       # Tokenizer export utility
+├── docs/
+│   ├── images/                                  # README screenshots
+│   ├── user_guide_en.pdf
+│   └── user_guide_tr.pdf
+├── .gitignore
+├── LICENSE                                      # Apache 2.0
+└── README.md
 ```
 
 ---
@@ -226,7 +306,7 @@ STING_DSS/
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/utkukose/STING_DSS.git
+git clone https://github.com/tubitaksting/STING-DSS.git
 cd STING_DSS
 
 # Copy and edit the environment file
@@ -296,7 +376,7 @@ GEMEX is a library developed within this project ([`pip install gemex`](https://
 
 ### Layer 5 — CTGAN Synthetic Patient Generation (Tab 6)
 
-A **clean-schema** CTGAN trains on 30 static patient features only — no derived risk labels, MRD, or prognosis. Post-hoc calculation chains (risk stratification, PI Advisory, MRD, prognosis) are applied after generation. This architecture eliminates label leakage (GAN-label concordance = 0.41%) and mode collapse, while preserving gereçekçi distributional properties (MMD = 0.069, MIA AUC = 0.530, clinical violation rate = 0%).
+A **clean-schema** CTGAN trains on 30 static patient features only — no derived risk labels, MRD, or prognosis. Post-hoc calculation chains (risk stratification, PI Advisory, MRD, prognosis) are applied after generation. This architecture eliminates label leakage (GAN-label concordance = 0.41%) and mode collapse, while preserving realistic distributional properties (MMD = 0.069, MIA AUC = 0.530, clinical violation rate = 0%).
 
 The **5-class unified risk ontology** (LR / SR / IR / HR / VHR) harmonises NCI, COG, BFM, and SJCRH criteria into a single consistent framework published in:
 
@@ -390,7 +470,7 @@ New outputs (publications, datasets) are regularly added. The project website is
 |------|------|-------------|-------|
 | **Prof. Dr. Utku Köse** | Principal Investigator / Developer | Süleyman Demirel University, Turkey / University of North Dakota, USA / VelTech, India / Universidad Panamericana, Mexico | [GitHub](https://github.com/utkukose) · [Web](https://utkukose.com) · [ORCID](https://orcid.org/0000-0002-9652-6415) |
 | **Prof. Dr. Gözde Özkan Tükel** | Researcher / Developer | Süleyman Demirel University, Turkey | — |
-| **Dr. İlhan Uysal** | Researcher / Developer | Burdur Mehmet Akif Ersoy University, Turkey | — |
+| **Assist. Prof. Dr. İlhan Uysal** | Researcher / Developer | Burdur Mehmet Akif Ersoy University, Turkey | — |
 | **Lect. Osman Ceylan** | Researcher / Developer | Isparta Applied Sciences University, Turkey | — |
 | **Lect. Emine Betül Sürücü** | Researcher / Developer | Süleyman Demirel University, Turkey | — |
 
