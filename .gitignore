@@ -1,0 +1,77 @@
+# ── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Virtual environments ──────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── Environment & secrets ─────────────────────────────────
+.env
+backend/.env
+*.env.local
+*.env.production
+secrets/
+
+# ── Model dosyaları (büyük binary — ayrıca paylaşılacak) ──
+backend/data/models/*.h5
+backend/data/models/*.pth
+backend/data/models/*.pkl
+backend/data/models/*.json
+backend/data/models/*.csv
+
+# ── GA / GAN veri havuzları ───────────────────────────────
+backend/data/ga_results/
+backend/data/gan_training_pool/
+backend/data/gnn_pool/
+
+# ── Yüklenen kullanıcı dosyaları ─────────────────────────
+backend/data/uploads/
+backend/data/temp/
+
+# ── Log dosyaları ─────────────────────────────────────────
+*.log
+logs/
+backend/logs/
+
+# ── Node / Frontend ───────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+.npm/
+
+# ── Docker volumes & runtime ──────────────────────────────
+docker/volumes/
+docker/data/
+*.pid
+
+# ── IDE & OS ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Jupyter ───────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Test & coverage ───────────────────────────────────────
+.coverage
+htmlcov/
+coverage.xml
